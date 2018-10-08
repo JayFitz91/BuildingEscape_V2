@@ -2,7 +2,10 @@
 
 #include "OpenDoor.h"
 #include "Engine/World.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/Actor.h"
+
+#define OUT
 
 // Sets default values for this component's properties
 UOpenDoor::UOpenDoor()
@@ -14,27 +17,18 @@ UOpenDoor::UOpenDoor()
 	// ...
 }
 
-
 // Called when the game starts
 void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
 	Owner = GetOwner();
-	ActorThatOpens = GetWorld()->GetFirstPlayerController()->GetPawn();
 
-}
+	if (!PressurePlate)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Pressure plate found for %s"), *Owner->GetName());
+	}
 
-void UOpenDoor::OpenDoor()
-{
-	FRotator NewRotation = FRotator(0.0f, OpenDoorAngle, 0.0f);
-	Owner->SetActorRotation(NewRotation);
-}
-
-void UOpenDoor::CloseDoor()
-{
-	FRotator NewRotation = FRotator(0.0f, 0.0f, 0.0f);
-	Owner->SetActorRotation(NewRotation);
 }
 
 // Called every frame
@@ -42,15 +36,35 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (PressurePlate->IsOverlappingActor(ActorThatOpens))
+	//Polling the trigger volume
+	if (GetTotalMassOfActorsOnPlate() > TriggerMass)
 	{
-		OpenDoor();
-		LastDoorOpenTime = GetWorld()->GetTimeSeconds();
+		OpenDoor.Broadcast();
 	}
-	
-	if (GetWorld()->GetTimeSeconds() - LastDoorOpenTime > DoorDelay)
+	else
 	{
-		CloseDoor();
+		CloseDoor.Broadcast();
 	}
 }
 
+float UOpenDoor::GetTotalMassOfActorsOnPlate()
+{
+	float TotalMass = 0.0f;
+
+	//Find all the overlapping actors
+	TArray<AActor*> OverlappingActors;
+
+	//Return if pressure plate is not returned
+	if (!PressurePlate) { return TotalMass; }
+
+	PressurePlate->GetOverlappingActors(OUT OverlappingActors);
+
+	//Iterate through them adding their masses
+	for (auto& ActorOnPlate : OverlappingActors)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("Overlapping Actor: %s"), *ActorOnPlate->GetName());
+		TotalMass += ActorOnPlate->FindComponentByClass<UPrimitiveComponent>()->GetMass();
+	}
+	//UE_LOG(LogTemp, Error, TEXT("Total Mass is: %d"), TotalMass);
+	return TotalMass;
+}

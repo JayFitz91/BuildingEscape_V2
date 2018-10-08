@@ -7,6 +7,7 @@
 #include "Engine/TriggerVolume.h"
 #include "OpenDoor.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDoorEvent);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BUILDINGESCAPE_V2_API UOpenDoor : public UActorComponent
@@ -25,26 +26,22 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void OpenDoor();
-	void CloseDoor();
+	float GetTotalMassOfActorsOnPlate();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ATriggerVolume* PressurePlate = nullptr;
+
+	UPROPERTY(BlueprintAssignable)
+	FDoorEvent OpenDoor;
+
+	UPROPERTY(BlueprintAssignable)
+	FDoorEvent CloseDoor;
+
+	UPROPERTY(EditAnywhere)
+	float TriggerMass = 30.0f;
 
 private:
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = true))
-	float OpenDoorAngle = 60.0f;
-
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = true))
-	float DoorDelay = 1.0f;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	float LastDoorOpenTime;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	ATriggerVolume* PressurePlate;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	AActor* ActorThatOpens;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	AActor* Owner;
+	AActor* Owner = nullptr;
 
 };
